@@ -128,6 +128,7 @@ PHASE 5: ALGORITHMS & MASTERY
 
 ## 🗺️ Visual Overview
 
+### visual summary
 ```mermaid
 graph TD
     %% Main Nodes
@@ -146,7 +147,215 @@ graph TD
     class T1,T2,T3 tier;
 ```
 
-![visual map summary](Assests/visual_summary.png)
+### Phase 1 
+
+```mermaid
+graph TB
+    %% Styling
+    classDef day fill:#e3f2fd,stroke:#1565c0,stroke-width:1px,rx:5,ry:5;
+    classDef weekLabel fill:#1565c0,stroke:#fff,stroke-width:0px,color:#fff,font-weight:bold,rx:5,ry:5;
+
+    %% Row 1: Week 1
+    subgraph Week1 [Week 1: Core Concepts]
+        direction LR
+        W1_L[Week 1]:::weekLabel
+        D1_1(RAM & Pointers):::day --> D1_2(Big-O Analysis):::day
+        D1_2 --> D1_3(Space Complexity):::day
+        D1_3 --> D1_4(Recursion I):::day
+        D1_4 --> D1_5(Recursion II):::day
+    end
+
+    %% Row 2: Week 2
+    subgraph Week2 [Week 2: Linear Structures]
+        direction LR
+        W2_L[Week 2]:::weekLabel
+        D2_1(Arrays):::day --> D2_2(Dynamic Arrays):::day
+        D2_2 --> D2_3(Linked Lists):::day
+        D2_3 --> D2_4(Stacks & Queues):::day
+        D2_4 --> D2_5(Binary Search):::day
+    end
+
+    %% Row 3: Week 3
+    subgraph Week3 [Week 3: Sorting & Hashing]
+        direction LR
+        W3_L[Week 3]:::weekLabel
+        D3_1(Elementary Sorts):::day --> D3_2(Merge/Quick):::day
+        D3_2 --> D3_3(Heap Sort):::day
+        D3_3 --> D3_4(Hash Tables I):::day
+        D3_4 --> D3_5(Hash Tables II):::day
+    end
+
+    %% Connections to force vertical stacking
+    Week1 --> Week2 --> Week3
+```
+
+### Phase 2
+
+```mermaid
+graph TB
+    %% Styling
+    classDef day fill:#e8eaf6,stroke:#3949ab,stroke-width:1px,rx:5,ry:5;
+    classDef tierDay fill:#fff9c4,stroke:#fbc02d,stroke-width:1px,rx:5,ry:5;
+    classDef weekLabel fill:#3949ab,stroke:#fff,stroke-width:0px,color:#fff,font-weight:bold,rx:5,ry:5;
+    classDef tierLabel fill:#fbc02d,stroke:#fff,stroke-width:0px,color:#000,font-weight:bold,rx:5,ry:5;
+
+    %% Row 1: Week 4
+    subgraph Week4 [Week 4: Basic Patterns]
+        direction LR
+        W4_L[Week 4]:::weekLabel
+        D4_1(Two Pointers):::day --> 
+        D4_2(Sliding Window Fixed):::day
+        D4_2 --> D4_3(Sliding Window Variable):::day
+        D4_3 --> D4_4(Prefix Sums):::day
+        D4_4 --> D4_5(Cycle Detection):::day
+    end
+
+    %% Row 2: Week 4.5 (Tier 1)
+    subgraph Week45 [Week 4.5: TIER 1 PATTERNS]
+        direction LR
+        W45_L[⭐ TIER 1]:::tierLabel
+        T1_1(Hash Map / Hash Set):::tierDay --> T1_2(Monotonic Stack):::tierDay
+        T1_2 --> T1_3(Merge Operations):::tierDay
+        T1_3 --> T1_4(Partitioning):::tierDay
+        T1_4 --> T1_5(Kadane's Algorithm):::tierDay
+    end
+
+    %% Row 3: Week 5
+    subgraph Week5 [Week 5: Trees & Heaps]
+        direction LR
+        W5_L[Week 5]:::weekLabel
+        D5_1(Binary Tree Anatomy):::day --> D5_2(Traversals):::day
+        D5_2 --> D5_3(Binary Search Trees):::day
+        D5_3 --> D5_4(Heaps & Priority Queues):::day
+        D5_4 --> D5_5(Balanced Trees):::day
+    end
+
+    %% Row 4: Week 5.5 (Tier 2)
+    subgraph Week55 [Week 5.5: TIER 2 PATTERNS]
+        direction LR
+        W55_L[⚡ TIER 2]:::tierLabel
+        T2_1(Difference Array):::tierDay --> T2_2(In-Place Replacement):::tierDay
+        T2_2 --> T2_3(Deque Operations):::tierDay
+    end
+
+    Week4 --> Week45 --> Week5 --> Week55
+```
+
+### Phase 3
+
+```mermaid
+graph TB
+    %% Styling
+    classDef day fill:#f3e5f5,stroke:#8e24aa,stroke-width:1px,rx:5,ry:5;
+    classDef weekLabel fill:#8e24aa,stroke:#fff,stroke-width:0px,color:#fff,font-weight:bold,rx:5,ry:5;
+
+    %% Row 1: Week 6
+    subgraph Week6 [Week 6: Graph Foundations]
+        direction LR
+        W6_L[Week 6]:::weekLabel
+        D6_1(Graph Representations):::day --> D6_2(BFS - Shortest):::day
+        D6_2 --> D6_3(DFS - Explore):::day
+        D6_3 --> D6_4(Topological Sort):::day
+        D6_4 --> D6_5(Union-Find):::day
+    end
+
+    %% Row 2: Week 7
+    subgraph Week7 [Week 7: ADVANCED GRAPH ALGORITHMS]
+        direction LR
+        W7_L[Week 7]:::weekLabel
+        D7_1(Dijkstra's Algorithm):::day --> D7_2(Bellman/Floyd):::day
+        D7_2 --> D7_3(MST - Prim/Krus):::day
+        D7_3 --> D7_4(Network Flow I):::day
+        D7_4 --> D7_5(Network Flow II):::day
+    end
+
+    Week6 --> Week7
+```
+
+### Phase 4 
+
+```mermaid
+graph TB
+    %% Styling
+    classDef day fill:#fff3e0,stroke:#ef6c00,stroke-width:1px,rx:5,ry:5;
+    classDef weekLabel fill:#ef6c00,stroke:#fff,stroke-width:0px,color:#fff,font-weight:bold,rx:5,ry:5;
+
+    %% Row 1: Week 8
+    subgraph Week8 [Week 8: SPECIALIZED STRUCTURES]
+        direction LR
+        W8_L[Week 8]:::weekLabel
+        D8_1(Tries / Prefix):::day --> D8_2(Segment Trees I):::day
+        D8_2 --> D8_3(Segment Trees II):::day
+        D8_3 --> D8_4(Fenwick Tree):::day
+        D8_4 --> D8_5(Suffix Structures):::day
+    end
+
+    %% Row 2: Week 9
+    subgraph Week9 [Week 9: STRING & MATH ALGORITHMS]
+        direction LR
+        W9_L[Week 9]:::weekLabel
+        D9_1(KMP):::day --> D9_2(Rabin-Karp):::day
+        D9_2 --> D9_3(Number Theory):::day
+        D9_3 --> D9_4(Modular Arithmetic):::day
+        D9_4 --> D9_5(Computational Geometry):::day
+    end
+
+    Week8 --> Week9
+```
+
+### Phase 5 
+
+```mermaid
+graph TB
+    %% Styling
+    classDef day fill:#ffebee,stroke:#c62828,stroke-width:1px,rx:5,ry:5;
+    classDef tierDay fill:#fff9c4,stroke:#fbc02d,stroke-width:1px,rx:5,ry:5;
+    classDef weekLabel fill:#c62828,stroke:#fff,stroke-width:0px,color:#fff,font-weight:bold,rx:5,ry:5;
+    classDef tierLabel fill:#fbc02d,stroke:#fff,stroke-width:0px,color:#000,font-weight:bold,rx:5,ry:5;
+
+    %% Row 1: Week 10
+    subgraph Week10 [Week 10: GREEDY & BACKTRACKING]
+        direction LR
+        W10_L[Week 10]:::weekLabel
+        D10_1(Greedy):::day --> D10_2(Backtracking I):::day
+        D10_2 --> D10_3(Backtracking II):::day
+        D10_3 --> D10_4(Pruning & Optimization):::day
+        D10_4 --> D10_5(Divide and Conquer):::day
+    end
+
+    %% Row 2: Week 11
+    subgraph Week11 [Week 11: Dynamic Programming]
+        direction LR
+        W11_L[Week 11]:::weekLabel
+        D11_1(DP Philosophy):::day --> D11_2(1D DP):::day
+        D11_2 --> D11_3(Classic Patterns / knapsack):::day
+        D11_3 --> D11_4(2D/Sequence DP):::day
+        D11_4 --> D11_5(Advanced DP):::day
+    end
+
+    %% Row 3: Week 12
+    subgraph Week12 [Week 12: Interview Mastery & Integration]
+        direction LR
+        W12_L[Week 12]:::weekLabel
+        D12_1(Merge Intervals):::day --> D12_2(Adv Mono Stack):::day
+        D12_2 --> D12_3(Cyclic Sort):::day
+        D12_3 --> D12_4(Adv Matrix Problems):::day
+        D12_4 --> D12_5(System Review & Integration):::day
+    end
+
+    %% Row 4: Week 13+ (Tier 3)
+    subgraph Week13 [Week 13+: GOOD-TO-KNOW PROBLEM-SOLVING PATTERNS]
+        direction LR
+        W13_L[🚀 TIER 3]:::tierLabel
+        T3_1(Fast & Slow Pointers Extended):::tierDay --> T3_2(Reverse & Two Pointers):::tierDay
+        T3_2 --> T3_3(Matrix Traversal):::tierDay
+        T3_3 --> T3_4(Conversion & Encoding):::tierDay
+    end
+
+    Week10 --> Week11 --> Week12 --> Week13
+```
+
+<!-- ![visual map summary](Assests/visual_summary.png)
 
 ![Phase 1](Assests/phase1_roadmap.png)
 
@@ -156,7 +365,7 @@ graph TD
 
 ![Phase 4](Assests/phase4_roadmap.png)
 
-![Phase 5](Assests/phase5_roadmap.png)
+![Phase 5](Assests/phase5_roadmap.png) -->
 
 ---
 
