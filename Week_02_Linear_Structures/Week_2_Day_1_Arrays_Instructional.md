@@ -1,10 +1,9 @@
-# Week 2, Day 1: Arrays
+# Arrays: Contiguous Memory, Cache Locality, and O(1) Indexing
 
 ## 🗓 Metadata
 **Week:** 2 | **Day:** 1 of 5 | **Topic:** Arrays  
 **Category:** Linear Structures | **Difficulty:** 🟢 Easy  
-**Prerequisites:** Week 1 (RAM Model, Asymptotic Analysis, Space Complexity)  
-**Time:** 90-120 minutes | **Status:** 🔍 In Study
+**Prerequisites:** Week 1 (RAM Model, Asymptotic Analysis, Space Complexity) | **Time:** 90-120 minutes | **Confidence Level (1–5):** —/5
 
 ---
 
@@ -12,36 +11,40 @@
 
 ### Real-World Problem
 
-You have a million user records and need to retrieve the user at position 500,000 in **milliseconds**. A linked list would require following 500,000 pointers (each a cache miss). An array retrieves it in **one memory access**.
+You're building a real-time data processing system (stock tickers, sensor data). You need to store 100 million data points and retrieve any point by index in microseconds. You consider two options: an array (contiguous memory) or a linked list (scattered pointers). You benchmark: array access takes 100 nanoseconds; linked list access takes 10,000+ nanoseconds (100x slower!). Why? Array data is densely packed, so accessing element i automatically loads nearby elements into CPU cache. Linked list requires following pointers, causing cache misses. The same Big-O (O(1) vs O(1)) hides vastly different real performance due to memory layout.
 
-**Design Problems Solved:**
-- Direct access to any element by index in constant time
-- Contiguous memory for cache efficiency  
-- Predictable performance (no pointer chasing)
-- Natural fit for many problems (image pixels, time series data, matrix operations)
+Arrays are the fundamental building block of efficient systems because they exploit CPU cache behavior and contiguous memory access patterns.
+
+### Design Problem Solved
+
+Arrays answer:
+
+1. **How do I store and access many items quickly?** Use arrays. O(1) access, O(1) space, dense packing, cache-efficient.
+
+2. **Why does contiguous memory matter?** Spatial locality: accessing element i loads elements i+1, i+2, ... into cache. Subsequent accesses hit cache (fast) instead of RAM (slow).
+
+3. **What's the trade-off with arrays?** Insertion/deletion at arbitrary positions is O(n) (must shift elements). Use arrays when access is frequent; use linked lists when insertion/deletion dominates.
+
+4. **How do I use indexing to implement fast algorithms?** Binary search, random sampling, direct access all rely on O(1) indexing.
 
 ### Trade-offs Introduced
-- **Cost:** Insertion/deletion O(n) — requires shifting elements
-- **Cost:** Fixed size (in statically allocated arrays) — must know size beforehand
-- **Benefit:** O(1) indexing, O(1) iteration, cache-friendly
+
+Arrays trade **flexibility for efficiency**:
+
+- **Contiguity:** Memory is packed tightly, enabling cache efficiency. But resizing requires allocation and copying (O(n)).
+- **Fixed size (initially):** Standard arrays have fixed size. Dynamic arrays (resizable) add overhead.
+- **Random access:** O(1) time to access any element. But insertion/deletion at arbitrary positions is O(n).
+
+We accept these trade-offs because random access and cache efficiency dominate modern systems, and dynamic arrays provide resizing when needed.
 
 ### Real System Usage
 
-**Linux Kernel:**
-- Process file descriptors stored in array (kernel/fs/file.c)
-- Fast access: `fd_set[index]` in single CPU cycle
-
-**Databases:**
-- Column-oriented storage uses arrays (ClickHouse, Parquet)
-- Reason: Cache locality for SIMD operations on millions of values
-
-**Graphics Engines:**
-- Vertex arrays, texture coordinates stored as arrays
-- Reason: GPU memory access patterns optimized for contiguous memory
-
-**Operating Systems:**
-- Page tables implemented as arrays
-- Virtual address → physical address lookup: `page_table[virtual_address >> PAGE_SHIFT]`
+- **Database indexes:** B-trees use arrays within nodes for cache efficiency.
+- **CPU caches:** Exploit spatial locality when arrays are accessed sequentially.
+- **Graphics (GPU):** Vertex buffers, texture data stored as arrays for fast parallel access.
+- **Machine learning:** Numpy arrays enable vectorized operations (SIMD) due to contiguous memory.
+- **Web servers:** HTTP buffers, request queues often use arrays.
+- **Operating systems:** Page tables, process tables use arrays for O(1) lookup.
 
 ---
 
@@ -49,297 +52,297 @@ You have a million user records and need to retrieve the user at position 500,00
 
 ### Core Analogy
 
-**Think of arrays as a row of numbered mailboxes on a street:**
-
-```
-Street Address:  1000     1008     1016     1024     1032
-                  ┌──┐    ┌──┐    ┌──┐    ┌──┐    ┌──┐
-Mailbox Index:   [0]      [1]      [2]      [3]      [4]
-Content:        "A"      "B"      "C"      "D"      "E"
-```
-
-If each mailbox holds 8 bytes and starts at address 1000:
-- Mailbox 0: address 1000
-- Mailbox 1: address 1008  
-- Mailbox 2: address 1016
-- Mailbox i: address 1000 + i×8
-
-**This is direct addressing:** Given index i, compute address instantly. No search needed.
+An array is like a **row of mailboxes**, numbered 0 to n-1. Each mailbox holds one item. To retrieve item at index i, you directly go to mailbox i (O(1) time). A linked list is like a **chain of people**, where each person points to the next. To find person at position i, you start from person 0, follow pointers to person 1, 2, ... i (O(i) time).
 
 ### Visual Representation
 
 ```
-ARRAY MEMORY LAYOUT:
+Array Memory Layout:
 
-  Index:  0     1     2     3     4     5
-          ┌─────┬─────┬─────┬─────┬─────┬─────┐
-Memory:   │ 10  │ 20  │ 30  │ 40  │ 50  │ 60  │ (contiguous bytes)
-          └─────┴─────┴─────┴─────┴─────┴─────┘
-          ↑
-      Base address: 0x7fff0000
+Index:  0      1      2      3      4
+Value: [10]  [20]  [30]  [40]  [50]
 
-Access arr[3]:
-  Address = 0x7fff0000 + 3×(size of one element)
-  = 0x7fff0000 + 3×4 (for 4-byte int)
-  = 0x7fff000c
-  Load from that address → get value 40
-  Time: ONE CPU cycle (assuming cache hit)
+Memory addresses (contiguous):
+1000   1004   1008   1012   1016
+[10]   [20]   [30]   [40]   [50]
+ ↑
+ Accessing arr[0] loads 1000-1032 into cache
+ (cache line ~64 bytes, fits multiple ints)
+
+Access time:
+- arr[0], arr[1], arr[2]: cache hits (fast, ~4ns)
+- arr[0], arr[1000000]: cache miss (slow, ~100ns)
+
+Linked List Memory Layout:
+
+Node 0      Node 1      Node 2
+[10|----]   [20|----]   [30|null]
+   ↓           ↓
+  1000        2048       4096
+
+Pointers force scattered memory access:
+- Accessing node 0: load 1000
+- Accessing node 1: follow pointer to 2048, load 2048
+- Accessing node 2: follow pointer to 4096, load 4096
+
+Each access may require RAM access (slow, ~100ns).
 ```
 
 ### Core Invariants
 
-1. **Contiguity:** All elements stored consecutively in memory
-2. **Direct Addressing:** Address of element i = base_address + i × element_size
-3. **Fixed Size** (static arrays) or **growable capacity** (dynamic arrays)
-4. **Index-based:** Elements accessed by integer position, not content
+Three principles of arrays:
+
+1. **Contiguity:** Array elements occupy consecutive memory addresses. This is the defining property.
+
+2. **Fixed indexing:** Array[i] directly accesses memory address base + i×element_size in O(1).
+
+3. **Cache locality:** Accessing Array[i] preloads Array[i+1], Array[i+2], ... into cache, making sequential access very fast.
 
 ### Key Concepts
 
-- **Base Address:** Memory location of first element
-- **Stride/Element Size:** Bytes per element  
-- **Index:** Integer position (0-based in most languages)
-- **Bounds:** Valid indices are 0 to length-1
+**Contiguous memory:** Elements stored at consecutive addresses (address_i = base + i×size).
+
+**Cache line:** CPU cache fetches data in chunks (~64 bytes typical). Array elements fit multiple per cache line.
+
+**Spatial locality:** Accessing nearby memory is fast due to cache. Arrays exploit this.
+
+**Random access:** O(1) time to access any element by index. Unlike linked lists (O(n) time).
+
+**Insertion/deletion:** Adding/removing elements requires shifting, O(n) time at arbitrary positions.
 
 ---
 
 ## 3️⃣ THE HOW — Mechanical Walkthrough
 
-### State/Data Structure
+### Array Indexing Mechanics
 
-```
-Array State:
-  buffer:        pointer to first element (base address)
-  element_size:  bytes per element (4 for int, 8 for long, etc.)
-  length:        number of elements currently stored
-  capacity:      maximum elements before reallocation (for dynamic arrays)
-```
+**Step 1: Calculate address.**
+address = base_address + index × element_size
 
-### Operation 1: Access (arr[i])
+**Step 2: Load from memory.**
+Fetch data at calculated address.
 
-**Step-by-step:**
-1. Receive index i (e.g., i=3)
-2. Calculate address: `address = buffer + i × element_size`
-3. Load from that memory address into CPU register
-4. Return the value
+**Step 3: Return element.**
+O(1) time, independent of array size.
 
-**Cost:** O(1) — single memory load  
-**Cache Behavior:** If elements are nearby in memory, likely cache hit
+### Operation 1: Direct Access (Indexing)
 
-**Example:**
 ```
 Array: [10, 20, 30, 40, 50]
-Access arr[2]:
-  buffer = 0x1000
-  element_size = 4 bytes
-  address = 0x1000 + 2×4 = 0x1008
-  Load from 0x1008 → get 30
+Base address: 1000
+Element size: 4 bytes (32-bit int)
+
+Access arr[3]:
+  address = 1000 + 3 × 4 = 1012
+  fetch from address 1012
+  return 40
+  Time: O(1)
+
+Access arr[0] or arr[4]:
+  Same process, O(1) regardless of index.
 ```
 
-### Operation 2: Insert at position i
-
-**Step-by-step:**
-1. Check if length < capacity (enough space?)
-2. Shift all elements from position i to end one position right
-3. Place new element at position i
-4. Increment length
-
-**Cost:** O(n) — must shift up to n elements  
-**Why Expensive:** Each element requires copying (load + store)
-
-**Example:**
-```
-Before: [10, 20, 30, 40, 50]  length=5, capacity=5
-Insert 25 at position 2:
-
-Step 1: Shift right (starting from end, not beginning!)
-        [10, 20, 30, 40, 50, ??]  length=6 (need capacity increase!)
-        
-Actually: If capacity=5 and length=5, cannot insert!
-Need to grow array first (Week 2, Day 2)
-
-Assuming we have capacity:
-        [10, 20, 30, 30, 40, 50]  shift 30,40,50 right
-        [10, 20, 25, 30, 40, 50]  place 25 at position 2
-```
-
-**Important:** Why shift from end? Because if you shift from beginning, you overwrite the original value at position i before copying it forward.
-
-### Operation 3: Delete at position i
-
-**Step-by-step:**
-1. Shift all elements from position i+1 to end one position left
-2. Decrement length
-
-**Cost:** O(n) — must shift remaining elements
-
-**Example:**
-```
-Before: [10, 20, 30, 40, 50]  length=5
-Delete position 2 (value 30):
-
-Step 1: Shift left
-        [10, 20, 40, 50, ??]  length=4
-```
-
-### Memory Behavior
-
-**Cache Locality (Critical for performance!):**
+### Operation 2: Sequential Access (Cache Efficiency)
 
 ```
-Sequential access (good cache):
-  for i=0 to n:
-    access arr[i]              ← neighbors are nearby
-    Hit rate: ~95% (entire array likely prefetched)
-    Time: ~5ns per access (L1 cache hit)
+Loop: for i from 0 to 99: sum += arr[i]
 
-Random access (poor cache):
-  for i in random_order:
-    access arr[i]              ← neighbors are far away
-    Hit rate: ~5% (cache misses)
-    Time: ~200ns per access (main memory access)
-  40x slower!
+Iteration 1: access arr[0]
+  address = 1000
+  load 1000-1063 into cache (64-byte cache line)
+  cache now contains arr[0] through arr[15]
+
+Iteration 2-15: access arr[1] through arr[15]
+  all in cache (hits), ~4ns each
+
+Iteration 16: access arr[16]
+  address = 1000 + 16×4 = 1064
+  cache miss, load 1064-1127 into cache
+  fetch from RAM (~100ns)
+
+Iteration 17-31: arr[17] through arr[31]
+  all in cache (hits), ~4ns each
+
+Pattern: Cache miss every 16 accesses (cache line size / element size)
+Average time per access: ~100ns / 16 = 6.25ns (mostly hits, few misses)
+
+Linked list equivalent: 100ns per access (every access is a pointer follow + RAM fetch)
+Array is ~15x faster due to cache efficiency!
 ```
 
-### Edge Cases
+### Operation 3: Insertion at Position i
 
-1. **Empty array:** Accessing arr[0] when length=0 → undefined behavior (out of bounds)
-2. **Insert/delete without space:** Attempting to insert when capacity is full → overflow
-3. **Negative index:** arr[-1] in C is undefined; in Python it means "from end" (different behavior)
-4. **Integer overflow:** Extremely large arrays (>2 billion elements) might overflow index arithmetic
+```
+Array: [10, 20, 30, 40, 50]
+Insert 25 at position 2
+
+Step 1: Shift elements from position 2 onward.
+  [10, 20, 30, 40, 50] → [10, 20, _, 30, 40, 50]
+  Shift arr[2..4] to arr[3..5]
+  Cost: 3 shifts = O(n) where n = array size
+
+Step 2: Place new element.
+  [10, 20, 25, 30, 40, 50]
+
+Total: O(n) time, O(1) space (in-place shift)
+Worst case: insertion at position 0 requires shifting all n elements.
+```
+
+### Operation 4: Deletion at Position i
+
+```
+Array: [10, 20, 30, 40, 50]
+Delete element at position 2
+
+Step 1: Shift elements after position 2 backward.
+  [10, 20, 30, 40, 50] → [10, 20, 40, 50, _]
+  Shift arr[3..4] to arr[2..3]
+  Cost: 2 shifts = O(n)
+
+Step 2: Remove last element (if tracking size).
+  [10, 20, 40, 50]
+
+Total: O(n) time, O(1) space
+```
+
+### Operation 5: Search in Unsorted Array
+
+```
+Array: [30, 10, 50, 20, 40]
+Search for value 20
+
+Method 1: Linear search
+  Check arr[0] = 30 (not found)
+  Check arr[1] = 10 (not found)
+  Check arr[2] = 50 (not found)
+  Check arr[3] = 20 (found!)
+  Time: O(n), index = 3
+
+Method 2 (requires sorted array): Binary search
+  Array sorted: [10, 20, 30, 40, 50]
+  Check arr[2] = 30 (target 20 is less)
+  Check arr[1] = 20 (found!)
+  Time: O(log n), index = 1
+```
 
 ---
 
 ## 4️⃣ VISUALIZATION — Simulation & Examples
 
-### Example 1: Sequential Access (Cache-Friendly)
-
-**Scenario:** Summing all elements in an array
+### Example 1: Array Memory Layout and Cache Behavior
 
 ```
-Array: [2, 5, 8, 11, 14]
-Base: 0x1000, Element Size: 4 bytes
+Physical Memory:
+Address:    Value:      Cache behavior:
+1000        10          ← cache miss, fetch 1000-1063
+1004        20          ← cache hit
+1008        30          ← cache hit
+1012        40          ← cache hit
+... (12 more elements in cache line)
+1060        X
+1064        Y           ← cache miss, fetch 1064-1127
 
-Timeline:
-i=0: Load from 0x1000 → get 2, sum=2
-     L1 cache now holds 0x1000-0x1010 (prefetch upcoming bytes)
+Sequential access to array of 1000 ints (4 bytes each):
+- Cache line size: 64 bytes = 16 ints
+- Cache misses: 1000 / 16 = 62.5 misses (rounded to 63)
+- Cache hits: 1000 - 63 = 937 hits
+- Time: 63 × 100ns (misses) + 937 × 4ns (hits) ≈ 6.3 + 3.75 = ~10ms total
 
-i=1: Load from 0x1004 → get 5 (already in L1!)
-     sum=7
+Without cache (hypothetical):
+- Time: 1000 × 100ns = 100ms (10x slower)
 
-i=2: Load from 0x1008 → get 8 (already in L1!)
-     sum=15
-
-i=3: Load from 0x100c → get 11 (already in L1!)
-     sum=26
-
-i=4: Load from 0x1010 → get 14 (already in L1!)
-     sum=40
-
-Result: 40 (all accesses were cache hits!)
+Cache efficiency: 10x speedup for sequential array access!
 ```
 
-**Performance:** 5 accesses × 5ns = 25ns total
-
-### Example 2: Insertion (Expensive Operation)
-
-**Scenario:** Insert 25 at position 1 in [10, 20, 30, 40]
+### Example 2: Insertion Impact Analysis
 
 ```
-Initial State:
-Index:  0    1    2    3    capacity=4
-        ┌────┬────┬────┬────┐
-        │ 10 │ 20 │ 30 │ 40 │
-        └────┴────┴────┴────┘
+Array of size 10: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-Step 1: Shift elements from position 1 rightward
-        Move 40 to position 3: [10, 20, 30, 40] → [10, 20, 30, 40]
-        Move 30 to position 2: [10, 20, 30, 40] → [10, 20, 30, 40]
-        Move 20 to position 2: [10, 20, 30, 40] → [10, 20, 20, 30]
+Insert 5.5 at index 5:
 
-Step 2: Insert 25 at position 1
-        [10, 25, 20, 30]
+Original: [1, 2, 3, 4, 5 | 6, 7, 8, 9, 10]
+                        ↑ position 5
 
-Wait, that's wrong! Let me redo this correctly:
+Shift step:
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, _]  (resize if needed)
+[1, 2, 3, 4, 5, _, 6, 7, 8, 9, 10]  (shift 6..10 to 6..11)
 
-Initial: [10, 20, 30, 40]
+Insert:
+[1, 2, 3, 4, 5, 5.5, 6, 7, 8, 9, 10]
 
-Shift rightward starting from position 1 (shift 20, 30, 40):
-        [10, 20, 30, 40] → [10, 20, 20, 30] (move 30 to pos 3)
-                                            (move 20 to pos 2)
-Actually, we need to do this from RIGHT to LEFT:
-        Position 3: 40 → position 4 (out of capacity!)
-
-So we need capacity > 4. Assuming we grow to capacity 5:
-
-        [10, 20, 30, 40, ??]
-
-        Position 3: move 40 to position 3
-        Position 2: move 30 to position 3... wait, that's backward.
-
-Correct procedure (right to left):
-        [10, 20, 30, 40, ??]  start
-        Copy position 3 (40) to position 4: [10, 20, 30, 40, 40]
-        Copy position 2 (30) to position 3: [10, 20, 30, 30, 40]
-        Copy position 1 (20) to position 2: [10, 20, 20, 30, 40]
-        Place 25 at position 1:            [10, 25, 20, 30, 40]
-
-Hmm, still wrong. Let me be more careful:
-
-Original: [10, 20, 30, 40]  at positions 0, 1, 2, 3
-After growing capacity to 5: [10, 20, 30, 40, ??]
-
-To insert 25 at position 1:
-  Shift everything from position 1 onward one step right
-  Step 1: 40 (pos 3) → pos 4
-  Step 2: 30 (pos 2) → pos 3
-  Step 3: 20 (pos 1) → pos 2
-  Step 4: Insert 25 at pos 1
-
-Result: [10, 25, 20, 30, 40]
-
-This is still wrong. Final correct attempt:
-Original: [10, 20, 30, 40]
-
-To insert 25 at position 1, we want: [10, 25, 20, 30, 40]
-
-Right-to-left copy:
-  pos 3: 40 → move to pos 4
-  pos 2: 30 → move to pos 3  
-  pos 1: 20 → move to pos 2
-  pos 1: insert 25
-
-Final: [10, 25, 20, 30, 40] ✓
-
-Actual memory operations (4 byte int):
-  1. Load 40, Store at pos 4
-  2. Load 30, Store at pos 3
-  3. Load 20, Store at pos 2
-  4. Store 25 at pos 1
-
-Total: 7 memory operations (4 loads + 4 stores) = O(n)
+Cost analysis:
+- Shift operations: 5 (elements 6-10 shifted once each)
+- For array size n, insertion at position i costs (n-i) shifts
+- Worst case (insert at position 0): n shifts
+- Average case (insert at random position): n/2 shifts
+- Big-O: O(n)
 ```
 
-### Example 3: Deletion (Also Expensive)
-
-**Scenario:** Delete position 1 from [10, 20, 30, 40]
+### Example 3: Linear vs. Binary Search on Arrays
 
 ```
-Initial: [10, 20, 30, 40]
+Sorted array: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+Search for 13
 
-To delete 20 (position 1), we want: [10, 30, 40]
+Linear Search:
+- Check index 0: 1 ≠ 13
+- Check index 1: 3 ≠ 13
+- Check index 2: 5 ≠ 13
+- Check index 3: 7 ≠ 13
+- Check index 4: 9 ≠ 13
+- Check index 5: 11 ≠ 13
+- Check index 6: 13 = 13 ✓
+Comparisons: 7, Time: O(n)
 
-Left-to-right copy (from deletion point onward):
-  pos 2: 30 → move to pos 1
-  pos 3: 40 → move to pos 2
-  Decrement length to 3
+Binary Search:
+- Left = 0, Right = 9
+- Mid = 4, arr[4] = 9
+- 13 > 9, search right: Left = 5, Right = 9
+- Mid = 7, arr[7] = 15
+- 13 < 15, search left: Left = 5, Right = 6
+- Mid = 5, arr[5] = 11
+- 13 > 11, search right: Left = 6, Right = 6
+- Mid = 6, arr[6] = 13 ✓
+Comparisons: 5, Time: O(log n)
 
-Final: [10, 30, 40] (length=3, capacity=4)
+For array of size 1 million:
+- Linear search: ~500,000 comparisons (average)
+- Binary search: ~20 comparisons
+- Speedup: 25,000x
+```
 
-Memory operations (4 byte int):
-  1. Load 30, Store at pos 1
-  2. Load 40, Store at pos 2
+### Example 4: 2D Array (Matrix) Memory Layout
 
-Total: 4 memory operations = O(n)
+```
+2D Array (3×3 matrix):
+    Col 0   Col 1   Col 2
+Row 0: [1]    [2]    [3]
+Row 1: [4]    [5]    [6]
+Row 2: [7]    [8]    [9]
+
+Memory layout (row-major, typical in C/C++):
+[1, 2, 3, 4, 5, 6, 7, 8, 9]
+ ↑ sequential in memory
+
+Access matrix[1][2] (value 6):
+- If base address is 1000, element_size = 4
+- Address = 1000 + (1×3 + 2) × 4 = 1000 + 5×4 = 1020
+- Fetch from 1020, get 6
+- Time: O(1)
+
+Row-wise loop (cache-efficient):
+for i from 0 to 2:
+  for j from 0 to 2:
+    sum += matrix[i][j]
+Sequential memory access: highly cache-efficient
+
+Column-wise loop (cache-inefficient):
+for j from 0 to 2:
+  for i from 0 to 2:
+    sum += matrix[i][j]
+Strided memory access (every 3rd element): poor cache behavior
+2D array example shows layout matters!
 ```
 
 ---
@@ -348,162 +351,129 @@ Total: 4 memory operations = O(n)
 
 ### Complexity Table
 
-| Operation | Best | Average | Worst | Notes |
-|-----------|------|---------|-------|-------|
-| **Access arr[i]** | O(1) | O(1) | O(1) | Direct addressing, always constant |
-| **Search (unsorted)** | O(1) | O(n) | O(n) | Linear scan, no index to help |
-| **Search (sorted)** | O(1) | O(log n) | O(log n) | Binary search possible |
-| **Insert at position i** | O(n) | O(n) | O(n) | Must shift all elements after i |
-| **Insert at end** | O(1) | O(1) | O(n) | Static array: O(1) if space; dynamic: O(1) amortized |
-| **Delete at position i** | O(n) | O(n) | O(n) | Must shift all elements after i |
-| **Delete at end** | O(1) | O(1) | O(1) | Just decrement counter |
-| **Space** | O(n) | O(n) | O(n) | Store n elements |
+| Operation | Time | Space | Notes |
+|-----------|------|-------|-------|
+| Access by index | O(1) | O(1) | Direct calculation |
+| Search (unsorted) | O(n) | O(1) | Linear scan |
+| Search (sorted) | O(log n) | O(1) | Binary search |
+| Insert at end | O(1) amortized | O(n) dynamic | No shift needed |
+| Insert at position i | O(n) | O(1) | Shift all after i |
+| Delete at position i | O(n) | O(1) | Shift remaining |
+| Sequential iteration | O(n) | O(1) | Cache-efficient |
+| 2D access | O(1) | O(1) | 2D indexing |
+| Reverse | O(n) | O(1) in-place | Single pass, swap ends |
+| Copy | O(n) | O(n) | Linear copy |
 
-### Memory Access Patterns
+### Key Insight
 
-**Sequential Iteration (Excellent Cache Behavior):**
-- CPUs prefetch cache lines (64 bytes = ~16 integers)
-- Accessing arr[0], arr[1], arr[2]... all hits
-- Hit rate: 95%+, latency: 5ns
-- **Throughput:** 3-4 billion simple operations per second per core
+**Array performance is dominated by memory locality, not just Big-O.** Two O(n) algorithms—one with sequential access, one with random access—can differ by 10-100x in practice due to cache behavior. Modern CPUs have sophisticated caches; understanding memory layout is essential for optimization.
 
-**Random Access (Poor Cache Behavior):**
-- No prefetching works
-- Each access is main memory latency
-- Hit rate: 5%, latency: 200ns
-- **Throughput:** 5-10 million simple operations per second
-- **40x slower** than sequential!
+### Real Memory Behavior
 
-**Example:**
-```c
-// Fast (sequential)
-for (int i = 0; i < n; i++)
-    sum += arr[i];
+**Cache hierarchy (typical 64-bit CPU):**
+- L1 cache: 32 KB, ~4ns latency
+- L2 cache: 256 KB, ~12ns latency
+- L3 cache: 8 MB, ~40ns latency
+- Main RAM: ~100ns latency
+- Disk: ~1ms latency
 
-// Slow (random)
-for (int i = 0; i < n; i++)
-    sum += arr[random() % n];
-```
+An array fitting in L1 cache: ~4ns per access
+Array requiring disk access: ~1ms per access (250,000x slower!)
 
 ### Edge Cases & Failure Modes
 
-1. **Buffer Overflow:** Accessing index >= length
-   - C/C++: Undefined behavior, reads/writes garbage
-   - Python: Raises IndexError
-   - Impact: Security vulnerability, crashes, corruption
+**Out-of-bounds access:** arr[n] or arr[-1] accesses invalid memory. In C/C++, no bounds checking; undefined behavior (crash, data corruption, or silently wrong result). In Java/Python, exception thrown.
 
-2. **Integer Overflow:** Array too large
-   - `int index = INT_MAX; arr[index] = value;`
-   - Wraps to negative index
-   - Impact: Unexpected behavior
+**Cache miss on every access:** If array size exceeds L3 cache and access pattern is random, performance degrades severely. Example: sparse matrix with random access.
 
-3. **Off-by-One Error:** Common bug
-   ```
-   for (int i = 0; i <= n; i++)
-       arr[i] = 0;  // Accesses arr[n] which is out of bounds!
-   ```
-
-4. **Aliasing Issues:** Overlapping insert/delete
-   ```
-   arr = [1, 2, 3, 4, 5]
-   // Insert 10 at position 2, delete position 3 simultaneously?
-   // Undefined order of operations
-   ```
-
-### When Complexity Analysis Breaks Down
-
-**Theory:** Array access is O(1)  
-**Practice:** Can vary 40x based on cache:
-- Predictor works (sequential access) → 5ns
-- Predictor fails (random access) → 200ns
-
-**Theory:** Insert is O(n)  
-**Practice:** Small n (n < 1000) has huge overhead from:
-- Branch mispredictions
-- Instruction pipeline stalls  
-- Function call overhead
-
-**Theory:** Amortized analysis  
-**Practice:** Worst-case pauses matter for latency-sensitive systems:
-- Audio processing can't afford 10ms pause for array reallocation
-- Real-time systems need predictable worst-case
+**False sharing (multicore):** Two threads accessing different elements in the same cache line cause cache coherency traffic. Performance degrades despite no logical conflict.
 
 ---
 
 ## 6️⃣ REAL SYSTEM INTEGRATION
 
-### Operating Systems
+### Databases: B-Trees with Array Nodes
 
-**Linux Process Management:**
+B-trees use arrays within each node:
+
 ```
-File: kernel/fs/file.c
-Code: fd_set[fd / BITS_PER_LONG] |= (1 << (fd % BITS_PER_LONG))
+B-tree node (order 3):
+[10, 20, 30] with pointers to children
 
-Reason: File descriptor lookup must be O(1)
-Each process has array of open files (fds 0-255 typical)
-Direct indexing: fd 5 goes directly to file_table[5]
-```
+Why arrays?
+- Contiguous keys in a node enable binary search (O(log k) where k = node branching)
+- Cache-efficient: all keys in a node fit in one/few cache lines
+- O(1) random access to node elements
 
-**Virtual Memory:**
-```
-Page Table = Array indexed by virtual page number
-Virtual Address = [Page Number] [Offset within page]
-To translate:
-  page_table[virtual_page_number] → physical page number
-  Final address = physical_page_base + offset
-
-Why array: O(1) translation, critical for every memory access!
+Total time for search in B-tree:
+- Levels: O(log n) where n = tree size
+- Per level, binary search in node: O(log k) where k = branching factor
+- Total: O(log k × log n) ≈ O(log n) (log k is small, ~5)
 ```
 
-### Databases
+### Graphics: Vertex Buffers (GPU)
 
-**Column-Oriented Storage (ClickHouse, DuckDB):**
+Vertex data in a game engine:
+
 ```
-Instead of:  [User1: name, age, email], [User2: name, age, email]
-Use arrays:  [User1.name, User2.name, ...], [User1.age, User2.age, ...]
+Vertex buffer (array):
+[x, y, z, nx, ny, nz, u, v, ...]  (one vertex)
+[x, y, z, nx, ny, nz, u, v, ...]  (second vertex)
+... (millions of vertices)
 
-Benefit: All ages contiguous → single cache prefetch loads 64 ages
-Why it matters: SIMD vectorization works on contiguous data
-                Can process 8 integers in one instruction
-```
+GPU access:
+- Contiguous in VRAM (graphics memory)
+- GPU fetches vertices sequentially for rasterization
+- Cache-efficient: many vertices per cache line
+- Enables parallel processing (vectorization)
 
-**Index Implementation:**
-```
-B-Tree uses arrays internally:
-  Node = fixed-size array of keys + pointers
-  Within node: binary search on array (O(log b) where b=block size)
-```
-
-### Graphics Engines
-
-**Vertex Arrays (OpenGL/DirectX):**
-```
-struct Vertex { float x, y, z; float nx, ny, nz; };
-Vertex vertices[1000000];  // Array of vertices
-
-GPU processes: vertices[0], vertices[1], ... in parallel
-Why array: GPU needs predictable memory layout for SIMD
-           Each core processes one vertex, all from nearby addresses
+Alternative (struct-of-arrays layout):
+[x1, x2, x3, ...] [y1, y2, y3, ...] [z1, z2, z3, ...]
+Better cache behavior for SIMD operations.
 ```
 
-**Texture Storage:**
+### Machine Learning: Numpy Arrays and Vectorization
+
+Numpy operations on arrays:
+
 ```
-Color pixels[1024][1024];  // 2D image as array
+Computation: C = A @ B (matrix multiplication, 1000×1000 matrices)
 
-Pixel access: pixels[y * width + x]
-GPU rasterizer needs fast pixel lookups
-Cache-friendly: Adjacent pixels are contiguous
+Option 1: Pure loops (simulated, slow)
+for i in range(1000):
+  for j in range(1000):
+    for k in range(1000):
+      C[i][j] += A[i][k] * B[k][j]
+
+Option 2: Numpy arrays (vectorized)
+C = numpy.dot(A, B)
+
+Numpy internally:
+- Uses contiguous array layout
+- Exploits SIMD (Single Instruction, Multiple Data)
+- Processes multiple multiplications per CPU cycle
+- Uses cache-optimized algorithms (like Strassen)
+
+Performance: 10-100x faster due to vectorization and cache efficiency!
 ```
 
-### Network Protocols
+### Operating Systems: Page Tables
 
-**Packet Processing:**
+Virtual memory uses arrays:
+
 ```
-packet_handlers[protocol_type] = function_ptr;
+Page table: array of page table entries
+Index = virtual page number
+Value = physical page number (or invalid)
 
-Receive packet:
-  protocol = packet->type_field;
-  handler = packet_handlers[protocol];  // O(1) dispatch!
+Access memory address: 0x12345678
+- Extract virtual page number: 0x12345 (assuming 4KB pages)
+- Look up page_table[0x12345]: O(1) direct access
+- Get physical address
+- Access physical memory
+
+Without array (linear search): O(n) where n = number of pages (slow)
+Array enables O(1) lookup, making memory translation fast.
 ```
 
 ---
@@ -512,31 +482,39 @@ Receive packet:
 
 ### What It Builds On
 
-- **RAM Model (Week 1):** Direct addressing only works because of linear RAM
-- **Asymptotic Analysis (Week 1):** Complexity analysis framework
-- **Space Complexity (Week 1):** Arrays consume O(n) space
+**RAM Model (Week 1, Day 1):** Arrays assume random access memory with O(1) indexed access.
+
+**Space Complexity (Week 1, Day 3):** Arrays use O(n) space for n elements, with O(1) overhead.
+
+**Asymptotic Analysis (Week 1, Day 2):** Array operations analyzed with Big-O notation.
 
 ### What Builds On It
 
-- **Dynamic Arrays (Week 2, Day 2):** Extends arrays with growth
-- **Sorting (Week 3):** All efficient sorts work on arrays
-- **Hash Tables (Week 3):** Uses arrays for collision handling
-- **Binary Search (Week 2, Day 5):** Requires arrays
-- **Graphs (Week 6):** Adjacency matrix representation
+**Dynamic Arrays (Week 2, Day 2):** Resizable arrays built on top of fixed-size arrays.
 
-### Applications in Algorithms
+**Sorting algorithms (Week 4):** Most sorting algorithms (quicksort, mergesort, heapsort) operate on arrays.
 
-- **Two Pointers (Week 4):** Operates on sorted arrays
-- **Merge Sort (Week 3):** Divide-and-conquer on arrays
-- **Matrix Algorithms:** 2D arrays for DP, image processing
-- **Bit Arrays/Bitsets:** Arrays optimized for boolean values
+**Hash tables (Week 6):** Hash tables use arrays as the underlying storage.
 
-### Combinations with Other Techniques
+**Matrix algorithms (Week 7):** 2D arrays represent matrices used in linear algebra.
 
-- **Arrays + Hash Table:** Hash table buckets are arrays
-- **Arrays + Sorting:** Preprocessing enables binary search
-- **Arrays + Prefix Sums:** O(1) range queries after O(n) preprocessing
-- **Arrays + Segment Trees:** Advanced range query structures built on arrays
+### Used In Algorithms
+
+**Binary search:** Requires sorted array for O(log n) search.
+
+**Sorting:** Arrays are sorted in-place (mostly) using quicksort, mergesort, etc.
+
+**Dynamic programming:** DP tables are often 1D or 2D arrays storing subproblem results.
+
+**Graph algorithms:** Adjacency matrix representation uses 2D arrays.
+
+### Combinations
+
+**Array + Hash table:** Hash tables use arrays as buckets.
+
+**Array + Linked list:** Some data structures use arrays of linked lists (e.g., hash tables with chaining).
+
+**Array + Tree:** B-trees use arrays within nodes.
 
 ---
 
@@ -544,225 +522,411 @@ Receive packet:
 
 ### Formal Definition
 
-**Array A** is a function A: {0, 1, ..., n-1} → V where V is the value set.
+**Array (abstract):** Ordered collection of n elements, indexed from 0 to n-1. Supports:
+- Access(i): Return element at index i, O(1).
+- Insert(i, x): Insert x at position i, shifting elements after i, O(n).
+- Delete(i): Delete element at position i, shifting elements after i, O(n).
 
-Represented in memory as:
-- Base address b
-- Element size s
-- Array address: A(i) = b + i×s
+**Implementation (concrete):** Contiguous block of memory, element i at address base + i × element_size.
 
-### Proof Sketch: Why Access is O(1)
+### Memory Address Calculation
 
-**Claim:** Array access takes O(1) time.
+**1D array:**
+address(i) = base + i × element_size
 
-**Proof:**
-1. Access arr[i] requires computing address: base + i × element_size
-2. This computation uses constant-time arithmetic operations:
-   - Integer multiplication: O(1) on modern CPUs (pipelined)
-   - Integer addition: O(1) on modern CPUs
-3. Memory load from computed address: O(1) latency (assuming cache hit)
-4. Total: O(1)
+**2D array (row-major):**
+address(i, j) = base + (i × cols + j) × element_size
 
-**Note:** This assumes element size is constant and known, which is true for statically typed languages.
+**3D array (row-major):**
+address(i, j, k) = base + (i × (cols × depth) + j × depth + k) × element_size
 
-### Recurrence Relation
+### Cache Analysis (Simplified)
 
-**Sequential Access Cost:**
-- T(n) = n × c where c is cost per access
-- = O(n) for reading all elements
-- Cache effects: First access might have T(1) = cache_miss_latency, subsequent T(1) = cache_hit_latency
+**Theorem:** For an array of n elements fitting in cache, sequential access is O(1) per element amortized.
 
-**Insert Operation:**
-- T(n) = 2n where 2n = n loads + n stores
-- = O(n)
-
-### Theoretical Models
-
-**I/O Model (Cache-Aware Complexity):**
-- B = cache line size (64 bytes typical)
-- Sequential access loads B bytes per cache miss
-- Random access: one element per cache miss
-- **Efficiency:** Sequential access is O(n/B) cache misses; random is O(n)
-- **Ratio:** n vs n/B = n/(64/4) = 16x difference for 32-bit integers
-
-**RAM Model Assumptions:**
-- All memory locations equally accessible (unrealistic—cache breaks this!)
-- Arithmetic is O(1) (true for small numbers)
-- Memory addresses unbounded (true—address space is large)
+**Proof sketch:** Cache line holds multiple elements. First access to cache line is a cache miss (~100ns). Subsequent accesses to same line are hits (~4ns). For sequential access, miss every cache_line_size / element_size accesses. Amortized: (~100ns + (cache_line_size/element_size - 1) × 4ns) / (cache_line_size/element_size) ≈ O(1) per element.
 
 ---
 
 ## 9️⃣ ALGORITHMIC DESIGN INTUITION
 
-### When to Use Arrays
+### Decision Framework: Array vs. Alternatives
 
-1. **Need O(1) random access by index:** Pixels in image, students by ID
-2. **Contiguous storage required:** Graphics APIs expect this
-3. **Iteration order matters:** Sequential processing
-4. **Memory efficiency critical:** Minimize per-element overhead (no pointers!)
-5. **Cache performance critical:** Video processing, real-time systems
+**Use arrays when:**
+- Random access (by index) is frequent.
+- Memory efficiency is important (contiguous layout).
+- Sequential access is common (cache-efficient).
+- Size is known or grows predictably.
 
-### When NOT to Use Arrays
+**Avoid arrays when:**
+- Frequent insertion/deletion at arbitrary positions (O(n) per operation).
+- Size is highly dynamic (many resizes).
+- You need fast insertion/deletion (use linked lists or trees).
 
-1. **Frequent mid-list insertion/deletion:** O(n) cost unacceptable → linked lists
-2. **Unknown size at compile time and growing to huge size:** Memory wastage → dynamic arrays better
-3. **Need to quickly remove arbitrary elements:** O(n) delete → consider linked lists
-4. **Sparse data:** Wasted space for unused indices → hash tables better
+### Cache Optimization Patterns
 
-### Decision Framework
-
+**Pattern 1: Row-major traversal in 2D arrays**
 ```
-Need to store ordered data?
-  │
-  ├─→ YES
-  │    │
-  │    ├─→ Need O(1) access by index?
-  │    │    ├─ YES → Array
-  │    │    └─ NO → Linked List (but rare!)
-  │    │
-  │    └─→ Need to insert/delete frequently in middle?
-  │         ├─ YES → Linked List or Deque
-  │         └─ NO → Array
-  │
-  └─→ NO (unordered)
-       └─→ Hash Table or Set
+for i in range(rows):
+  for j in range(cols):
+    process(matrix[i][j])
+Sequential memory access: cache-efficient
 ```
 
-### Trade-off Scenarios
+**Pattern 2: Avoid strided access**
+```
+for j in range(cols):
+  for i in range(rows):
+    process(matrix[i][j])
+Strided memory access (every cols elements): poor cache behavior
+```
 
-**Scenario 1: Game Engine Storing Entities**
-- Array pros: O(1) access by entity ID, cache-friendly iteration
-- Array cons: Adding/removing entities is O(n) shuffle
-- Decision: Use array + "swap-with-last" deletion (O(1) amortized)
-
-**Scenario 2: FIFO Queue**
-- Array pros: Simple, cache-friendly
-- Array cons: Growing front requires leftward shift (O(n))
-- Decision: Use circular buffer (array + head/tail pointers)
-
-**Scenario 3: Text Editor (undo/redo)**
-- Array pros: Sequential access to document fast
-- Array cons: Inserting/deleting characters is O(n)
-- Decision: Use rope data structure or piece table (advanced)
+**Pattern 3: Fit data in cache**
+```
+If array size < cache size, all accesses are cache hits (fast).
+Strategy: Divide large problems into cache-sized chunks.
+```
 
 ---
 
 ## 🔟 KNOWLEDGE CHECK — Socratic Reasoning
 
-**Question 1: Why is array access O(1) even though CPUs execute billions of instructions per second?**
+1. **Why is arr[i] an O(1) operation while linked_list.get(i) is O(n)?**
+   Hint: Arrays store contiguously; the address is calculated directly. Linked lists require pointer chasing.
 
-Your reasoning:
-- How many instructions does it take to compute an address?
-- What does O(1) mean relative to the size of the array?
-- Does the CPU time matter if it's the same for any index?
+2. **Why is sequential array access faster than random access, despite both being O(n)?**
+   Hint: Cache locality. Sequential access benefits from prefetching; random access causes cache misses.
 
-**Question 2: You want to insert an element at the beginning of an array of 1 million elements. If each element is 8 bytes and insertion takes 1 nanosecond per byte, how long does it take?**
+3. **Why does insertion at position i in an array cost O(n) even though only n-i elements need shifting?**
+   Hint: Shifting is O(n-i), but Big-O simplifies to O(n) for any constant position. Worst case (insert at 0) is O(n).
 
-Your reasoning:
-- How many bytes must be shifted?
-- What's the total time in nanoseconds? Milliseconds?
-- Is this the bottleneck in a real system?
+4. **Can you design an algorithm that uses O(n) space but achieves O(log n) search time?**
+   Hint: Sort the array first (O(n log n) time, O(n) space), then use binary search (O(log n) per query). This is standard for databases.
 
-**Question 3: Arrays require contiguous memory. What happens if you have 10GB of RAM but it's fragmented into 100MB chunks? Can you allocate a 5GB array?**
-
-Your reasoning:
-- What does contiguous mean?
-- How do operating systems manage fragmentation?
-- What alternatives exist for large allocations?
-
-**Question 4: You're designing a cache-aware sorting algorithm. Would you prefer to access arr[i], arr[i+1], arr[i+2]... or arr[i], arr[i+1000], arr[i+2000]...? Why?**
-
-Your reasoning:
-- What does CPU prefetching do?
-- How does cache line size affect this?
-- Calculate the cache miss ratio for each pattern
+5. **Why do 2D arrays in row-major order have better cache behavior than column-major in most algorithms?**
+   Hint: Row-major storage is sequential in memory. Iterating rows sequentially exploits prefetching. Column-major has strided access.
 
 ---
 
 ## 1️⃣1️⃣ RETENTION HOOK — Memory Anchors
 
-### One-Line Essence
+### One-Liner Essence
 
-> **Arrays are numbered mailboxes: O(1) to any address via arithmetic, O(n) to rearrange, O(1) cache-efficient to traverse sequentially.**
+**"Arrays: contiguous, indexed, cache-efficient; insertion/deletion cost shifting."**
 
 ### Mnemonic Device
 
-**"D.I.C.T."**
-- **D**irect addressing (address = base + i × size)
-- **I**ndexing is O(1)
-- **C**ontiguous memory (cache-friendly)
-- **T**radeoff: insert/delete are O(n)
+**"Array = Address + Random access = Direct memory computation, Yet insertion causes Yachting (shifting)."** (Weak mnemonic, but captures key ideas.)
+
+**"CAR model":** Contiguous, Access O(1), Random insertion O(n).
 
 ### Geometric/Visual Cue
 
-```
-Picture: Row of numbered mailboxes
-│[0]│[1]│[2]│[3]│[4]│
-Location i instantly: base + i×8
-
-vs.
-
-Linked list (chain):
-●→●→●→●→●
-Must follow chain, no shortcuts
-```
-
-### Cognitive Lenses
-
-| Lens | Insight |
-|------|---------|
-| **Computational** | CPU sees: load from (base + offset). Offset computation is free. Main cost is memory latency, prefetching, and cache behavior. |
-| **Psychological** | Intuitive mistake: "Array access should cost something proportional to array size!" Actually: index arithmetic is negligible, memory latency dominates. |
-| **Design Trade-off** | Buy: O(1) random access + cache efficiency. Sell: O(n) insertion/deletion + fixed/predictable size. |
-| **AI/ML Analogy** | Arrays = vectorized operations. SIMD processes 8 integers in parallel from contiguous memory. Linked lists break SIMD (scattered pointers). |
-| **Historical Context** | Von Neumann (1945): "Use arrays for performance." 80 years later, still true. Cache didn't exist then, but principle holds: contiguity matters. |
+Imagine a **row of numbered mailboxes**. Going directly to mailbox 5 is instant (O(1)). But inserting a new mailbox 2.5 requires shifting all mailboxes 3 onward, which takes time proportional to how many are after it.
 
 ---
 
-## Supplementary Outcomes
+## 🧩 5 Cognitive Lenses
 
-### External References & Resources
+### 🖥️ Computational Lens
 
-1. **"What Every Programmer Should Know About Memory"** by Ulrich Drepper
-   - Section 2: CPU Caches
-   - Why: Deep dive into cache line prefetching, memory bandwidth
+**Focus:** Memory layout, cache hierarchy, CPU prefetching, memory bandwidth
 
-2. **"Systems Performance" by Brendan Gregg**
-   - Chapter 5: Memory
-   - Why: Real-world cache measurement and profiling tools
+- **Explanation:** Arrays store elements contiguously in memory, enabling CPU prefetching: accessing element i automatically fetches i+1, i+2, ... into cache due to spatial locality. A 64-byte cache line holds ~16 32-bit integers. Accessing arr[0] brings arr[0..15] into cache; subsequent accesses arr[1..15] are cache hits (~4ns). After arr[16], another cache miss. Sequential array access achieves ~4 cache hits per 1 miss, amortizing to ~O(1) per element after accounting for miss penalty. Linked lists have no such prefetching; each pointer dereference risks a cache miss. Arrays exploit the memory hierarchy; linked lists don't.
 
-3. **Linux Source Code:**
-   - `kernel/fs/file.c`: File descriptor array implementation
-   - Why: See array usage in production kernel
+- **Implication:** Array performance is dominated by cache behavior, not raw Big-O. An O(n) loop on a contiguous array outperforms an O(n) loop on scattered pointers by 10-100x. Microarchitecture and memory layout determine real performance. Big-O is necessary but insufficient for performance analysis.
 
-4. **Online:**
-   - TLB (Translation Lookaside Buffer) explanation: https://en.wikipedia.org/wiki/Translation_lookaside_buffer
-   - Why: Understand virtual address → physical address lookup
-
-### Common Misconceptions Fixed
-
-**❌ "Array access costs time proportional to array size"**  
-✅ "Array access is O(1)—time independent of array size. Cache misses cost more than arithmetic."
-
-**❌ "Insertion is always O(n)"**  
-✅ "Insertion at end can be O(1) amortized (dynamic array) or O(1) if space exists. Mid-insertion is O(n)."
-
-**❌ "Arrays are outdated; use linked lists"**  
-✅ "Arrays dominate in practice. Linked lists have niche uses (undo/redo, allocators). 95% of the time, use arrays."
-
-**❌ "Memory bandwidth is unlimited"**  
-✅ "Memory bandwidth is ~100GB/s. Sequential access uses it efficiently (prefetch). Random access wastes it (scattered accesses)."
-
-### Practice Problems & Scenarios
-
-1. **Rotate Array:** Rotate array by k positions. What's the in-place algorithm?
-2. **Remove Duplicates:** Remove duplicates from sorted array, in-place. Why does sorting help?
-3. **Merge Sorted Arrays:** Merge two sorted arrays. Is O(n) time achievable?
-4. **Majority Element:** Find element appearing > n/2 times. Can you do this in one pass?
-5. **Product of Array Except Self:** For each position, compute product of all other elements. No division allowed.
+- **Practical:** Profile with cache-miss counters (`perf` on Linux, `cachegrind`). Measure total L1/L2/L3 misses and page faults. Optimize by: (1) keeping frequently accessed data in cache, (2) accessing in sequential order, (3) minimizing stride, (4) fitting hot data in L3. Matrix transpose benchmark is famous: naive transpose with strided access is 10x slower than cache-aware algorithm.
 
 ---
 
-**Confidence Level (1-5):** ___/5  
-**Next Review:** (Spaced repetition: 2 days, 7 days, 30 days)
+### 🧠 Psychological Lens
 
+**Focus:** Misconceptions about Big-O vs. real performance, array vs. linked list intuition
+
+- **Common trap:** "O(1) access is always fast." Students assume all O(1) operations are equal. Reality: arr[i] (contiguous) is 100x faster than linked_list.get(i) (scattered pointers), both O(1). Same asymptotic complexity, vastly different performance.
+
+- **Reality:** Machine models (RAM, cache hierarchy) are crucial. Algorithm analysis on paper (Big-O) is abstract. Real performance depends on memory layout, CPU features (prefetch, out-of-order execution), and data flow. Teach Big-O as a starting point; emphasize real-world measurement.
+
+- **Memory aid:** **"Big-O is not destiny."** Same Big-O ≠ same speed. Measure first; optimize after.
+
+---
+
+### 🔄 Design Trade-off Lens
+
+**Focus:** Array vs. alternatives (linked list, tree, hash table), insertion/deletion vs. access trade-off
+
+- **Trade-off 1 (Access Speed vs. Insertion Cost):** Arrays offer O(1) access, but insertion/deletion at arbitrary positions is O(n) (shift). Linked lists offer O(n) access but O(1) insertion/deletion if you have a pointer to the position. Trade-off: prioritize access (arrays) or modification (linked lists).
+
+- **Trade-off 2 (Memory Efficiency vs. Functionality):** Fixed-size arrays use only the space needed (no overhead). Dynamic arrays over-allocate (e.g., double capacity) for amortized O(1) insertion. Trade-off: space efficiency vs. amortized time efficiency.
+
+- **Trade-off 3 (Sequential vs. Random Access):** Arrays are sequential-access-friendly (cache-efficient) but also support random access (O(1) indexing). Linked lists support neither well. Trade-off: use arrays for most problems; use specialized structures (B-trees, hash tables) only when arrays' weakness (insertion/deletion) is a bottleneck.
+
+- **Decision:** Start with arrays. If insertion/deletion becomes a bottleneck, profile to confirm. Then consider alternatives (linked list, balanced tree, hash table) based on the specific operation frequency.
+
+---
+
+### 🤖 AI/ML Analogy Lens
+
+**Focus:** Tensors (multi-dimensional arrays), vectorization, GPU memory, batching
+
+- **Analogy:** A tensor in deep learning is a multi-dimensional array. Batches of images are 4D arrays: [batch_size, height, width, channels]. Model weights are tensors (arrays). Vectorization (operating on whole arrays) leverages SIMD (Single Instruction, Multiple Data) on CPUs and GPUs, exploiting the contiguous array layout. Numpy, PyTorch, TensorFlow all optimize array operations using cache-aware algorithms and hardware acceleration.
+
+- **Connection:** ML performance is fundamentally tied to array memory layout and cache efficiency. Batch size (array dimension) affects training speed and GPU memory usage. Tensor layout (contiguous vs. strided) affects computation speed. Understanding array cache behavior directly applies to optimizing ML pipelines.
+
+- **Insight:** ML engineers spend significant effort on data layout (channel-first vs. channel-last formats) because it directly affects training speed via cache efficiency. Array intuition is essential.
+
+---
+
+### 📚 Historical Context Lens
+
+**Focus:** Evolution of array implementations, historical performance shifts
+
+- **Origin:** Arrays are among the oldest data structures, fundamental to early programming (Fortran, Algol, 1950s-60s). Efficient indexing via direct memory address calculation was revolutionary.
+
+- **First systems:** Early computers (1950s-60s) had small RAM (kilobytes). Arrays were primary data structure; linked lists avoided due to pointer overhead. Memory access was roughly uniform (no cache). Big-O analysis was paramount.
+
+- **Cache revolution:** Introduction of CPU caches (1980s-90s) changed the landscape. Suddenly, memory layout mattered enormously. Contiguous arrays became 10-100x faster than scattered pointers. Big-O became insufficient; cache behavior analysis was necessary.
+
+- **Modern era:** GPUs (2000s+) have massive parallelism exploiting array vectorization. ML revolution relies on efficient array operations (Numpy, GPU kernels). Modern CPUs have sophisticated caches and prefetchers. Understanding cache efficiency is critical for performance.
+
+- **Future:** As memory bandwidth becomes a bottleneck (vs. compute), array layout and memory efficiency will remain central to algorithm design.
+
+---
+
+## 📋 SUPPLEMENTARY OUTCOMES
+
+### ⚔️ Practice Problems (8-10 per day)
+
+**Problem 1: Direct Indexing and Address Calculation**
+- **Source:** Interview
+- **Difficulty:** 🟢 Easy
+- **Key Concepts:** Array indexing, memory address
+- **Constraint:** Analytical
+- **Challenge:** Given array base address, element size, and index, calculate the memory address of that element. Verify O(1) time.
+
+**Problem 2: 2D Array Memory Layout**
+- **Source:** Interview
+- **Difficulty:** 🟡 Medium
+- **Key Concepts:** Row-major vs. column-major, 2D indexing
+- **Constraint:** Design
+- **Challenge:** Explain row-major and column-major layout. Show how cache behavior differs for row-wise vs. column-wise traversal.
+
+**Problem 3: Insertion and Deletion Cost Analysis**
+- **Source:** Interview
+- **Difficulty:** 🟢 Easy
+- **Key Concepts:** Shifting, O(n) insertion/deletion
+- **Constraint:** Analysis
+- **Challenge:** Analyze cost (number of shifts) for inserting/deleting at position i in an array of size n. Explain why worst-case is O(n).
+
+**Problem 4: Cache Efficiency in Sequential Access**
+- **Source:** Systems / Performance Interview
+- **Difficulty:** 🟡 Medium
+- **Key Concepts:** Cache lines, spatial locality, prefetching
+- **Constraint:** Estimation
+- **Challenge:** Estimate the number of cache misses for a sequential loop over an array of size n, element size s, cache line size c.
+
+**Problem 5: Binary Search on Sorted Array**
+- **Source:** LeetCode / Interview
+- **Difficulty:** 🟡 Medium
+- **Key Concepts:** Binary search, O(log n)
+- **Constraint:** Algorithm design
+- **Challenge:** Implement binary search conceptually (logic, no code). Analyze time/space complexity.
+
+**Problem 6: Array vs. Linked List Performance**
+- **Source:** Systems / Performance Interview
+- **Difficulty:** 🟡 Medium
+- **Key Concepts:** Random access vs. pointer chasing
+- **Constraint:** Comparative analysis
+- **Challenge:** Compare performance of array sequential access vs. linked list sequential access. Explain why array is faster despite same Big-O.
+
+**Problem 7: Dynamic Array Resizing**
+- **Source:** Data Structures Interview
+- **Difficulty:** 🟡 Medium
+- **Key Concepts:** Resizing, amortized analysis, space trade-off
+- **Constraint:** Analysis
+- **Challenge:** Analyze the cost of resizing a dynamic array (when it reaches capacity). Explain doubling strategy and amortized O(1) insertion.
+
+**Problem 8: Sparse Matrix Storage**
+- **Source:** Advanced Interview / Real System
+- **Difficulty:** 🔴 Hard
+- **Key Concepts:** Sparse data, array efficiency, alternatives
+- **Constraint:** Design
+- **Challenge:** A matrix is mostly zeros (sparse). Array representation wastes space. Propose an alternative storage scheme and analyze space/time trade-offs.
+
+**Problem 9: Cache-Oblivious Matrix Transpose**
+- **Source:** Advanced Systems / Performance Interview
+- **Difficulty:** 🔴 Hard
+- **Key Concepts:** Cache efficiency, algorithm design, memory hierarchy
+- **Constraint:** Optimization
+- **Challenge:** Design an algorithm for transposing an n×n matrix that minimizes cache misses, without knowing cache parameters.
+
+**Problem 10: Bulk Operations and Vectorization**
+- **Source:** Real system / ML Interview
+- **Difficulty:** 🟡 Medium
+- **Key Concepts:** SIMD, vectorization, array efficiency
+- **Constraint:** Design / estimation
+- **Challenge:** Compare element-wise operations (using scalar loops) vs. vectorized operations on arrays. Explain speedup due to SIMD and cache efficiency.
+
+---
+
+### 🎙️ Interview Q&A (6-10 pairs per day)
+
+**Q1: Why is array access O(1) while linked list access is O(n)?**
+- **Answer:** Array elements are stored contiguously in memory. To access arr[i], the address is calculated directly: base + i × element_size. This calculation is O(1)—no loops or searches. Linked lists require following i pointers (node.next, node.next.next, ...), which is O(i) time. For arbitrary position i, linked list access is O(n) worst case.
+- **Follow-up 1:** Does this mean arrays are always better than linked lists? (No, insertion/deletion at arbitrary positions is O(n) for arrays but O(1) for linked lists if you have a pointer to the position.)
+- **Follow-up 2:** Can you optimize linked list access? (Not for random access by index. But if access patterns are known (e.g., always from head), you can optimize differently.)
+- **Real Scenario:** Choosing between array and linked list for a data structure. If frequent random access is needed, array is better.
+
+**Q2: Explain why sequential array access is faster than random access, even though both are O(n) time complexity.**
+- **Answer:** Both have O(n) time complexity, but Big-O ignores constants. Practically, sequential access is 10-100x faster due to cache behavior. Sequential access to arr[0], arr[1], arr[2], ... accesses memory addresses base, base+4, base+8, ... (increasing linearly). CPU prefetches these: accessing arr[0] loads arr[0..15] (64-byte cache line) into cache. Accessing arr[1..15] hit the cache (~4ns each). Random access like arr[0], arr[1000000], arr[5000], ... accesses scattered addresses, causing cache misses (~100ns each). Sequential = mostly cache hits; random = mostly cache misses. Same Big-O, 25x difference in real speed.
+- **Follow-up 1:** How significant is cache behavior in practice? (Extremely. On modern CPUs, memory hierarchy (cache vs. RAM vs. disk) determines most of the performance variation. Ignoring it is dangerous.)
+- **Follow-up 2:** Can you design algorithms that exploit cache efficiency? (Yes, techniques like blocking for matrix operations, cache-oblivious algorithms, and data layout optimization all explicitly target cache efficiency.)
+- **Real Scenario:** Optimizing a database query that scans a large table. Sequential scan exploits cache; random access (if sorting inefficiently) is much slower. Query planners choose sequential scans when filtering many rows.
+
+**Q3: What's the time and space complexity of inserting an element at position i in an array?**
+- **Answer:** Time: O(n), where n is the array size. Space: O(1) if the array is resized in-place (shifting); O(n) if you must allocate a new array. To insert at position i, you must shift all elements from position i onward (positions i, i+1, ... n-1 move to i+1, i+2, ... n). This requires n-i shift operations. For insertion at the beginning (i=0), all n elements shift, O(n) time. For insertion at the end (i=n-1), 1 element shifts (technically 0, if space is available), O(1) time. Average case (insert at random position i): (n-i) shifts on average n/2, so O(n) average. Worst case (insert at position 0): O(n).
+- **Follow-up 1:** Why does big-O say O(n) when insertion at the end is O(1)? (Big-O captures worst-case or worst-position. Insertion at position 0 is worst case; Big-O is O(n). You can specify "O(n-i) or O(n)" for clarity.)
+- **Follow-up 2:** Can you design a data structure with O(1) insertion anywhere? (Linked list has O(1) insertion if you have a pointer to the location. But random access is O(n). Trade-off: choose based on needs.)
+- **Real Scenario:** A data structure frequently inserts at the front (like a deque). Use a deque (double-ended queue) or linked list for efficient front insertion; arrays are inefficient for this pattern.
+
+**Q4: Why do 2D arrays use row-major order in most languages (C, C++, Java) rather than column-major?**
+- **Answer:** Row-major order stores elements row by row, sequentially in memory: row 0, then row 1, then row 2, ... This makes row-wise traversal (common in algorithms) sequential in memory, exploiting cache prefetching. Column-major order (used in Fortran and some libraries) stores column by column: col 0, then col 1, then col 2, ... Column-major makes column-wise traversal sequential. Most algorithms iterate rows (row-wise), so row-major is the default. Row-major cache efficiency is why row-wise loops are faster. Historical note: Fortran (1950s) used column-major for matrix operations; C (1970s) switched to row-major for general-purpose use.
+- **Follow-up 1:** If I iterate columns in C (row-major array), will it be slow? (Yes, very slow. Stride is matrix.cols integers apart in memory. Poor cache behavior; many misses. 10-100x slower than row-wise iteration.)
+- **Follow-up 2:** How can you optimize column-wise iteration? (Transpose the matrix first (O(n²)) to column-major layout, then iterate. Or use column-major storage from the start. Or use blocking to fit submatrices in cache. Trade-off: extra time for better cache behavior.)
+- **Real Scenario:** Graphics libraries (OpenGL, DirectX) support both row-major and column-major matrix conventions. Choosing wisely affects performance. Game developers ensure matrix layout matches iteration patterns.
+
+**Q5: How does binary search achieve O(log n) on an unsorted array?**
+- **Answer:** Binary search does NOT work on unsorted arrays. It requires a sorted array. If the array is unsorted, you must first sort it (O(n log n) time), then binary search is O(log n) per query. Total: O(n log n + q log n) where q is the number of queries. If you have only one query, total is O(n log n). If you have many queries (q >> n), binary search is worth the sort. On an unsorted array without sorting, linear search is O(n) and the best you can do.
+- **Follow-up 1:** Why must binary search require a sorted array? (Binary search works by comparing the search key with the middle element and eliminating half the remaining elements. This only works if elements are sorted; you can infer which half contains the target.)
+- **Follow-up 2:** Can you search faster than O(log n)? (Yes, with hash tables: O(1) average case. But hashing doesn't give you sorted order. If you need range queries (find all keys between a and b), sorted arrays/trees are better.)
+- **Real Scenario:** Database indexes use sorted arrays (B-trees) for O(log n) range queries. Hash indexes are O(1) for single-key lookup but don't support range queries.
+
+**Q6: Compare the performance of arrays and linked lists for different access patterns.**
+- **Answer:** Arrays: O(1) random access, O(1) insertion/deletion if you know the position and it's at the end, O(n) insertion/deletion at arbitrary positions. Linked lists: O(n) random access (follow pointers), O(1) insertion/deletion at any position (if you have a pointer to the location). Cache efficiency: arrays are cache-efficient (sequential memory); linked lists are cache-inefficient (scattered pointers). Overall: arrays are preferred for most workloads (read-heavy, in-order access). Linked lists shine only when you frequently insert/delete at known positions (like a queue or deque). Real-world note: even for queues, deques (double-ended queues backed by arrays) are often faster than linked lists due to cache efficiency.
+- **Follow-up 1:** When should I use linked lists? (Only when insertion/deletion at arbitrary positions is very frequent and cache efficiency doesn't matter. Rare in modern systems.)
+- **Follow-up 2:** What about trees and hash tables? (Trees (balanced trees) offer O(log n) search and O(log n) insertion/deletion, better than linked lists. Hash tables offer O(1) search on average. Use trees/hash tables instead of linked lists.)
+- **Real Scenario:** Standard library deque in C++ is typically backed by arrays (or a hybrid), not linked lists, because arrays are faster despite O(n) insertion in the middle. Linked lists are rarely the right choice.
+
+---
+
+### ⚠️ Common Misconceptions (3-5 per topic)
+
+**❌ Misconception 1: "All O(1) operations are equally fast."**
+- **Why Students Believe This:** Big-O notation treats O(1) uniformly.
+- **✅ Correct Understanding:** O(1) varies widely in practice. arr[i] (direct calculation) is ~10 nanoseconds. linked_list.get(i) (pointer chasing) is ~10,000 nanoseconds (1000x slower). Both O(1), vastly different performance. Real performance depends on memory layout, cache behavior, and CPU features.
+- **How to Remember:** **"O(1) constant ≠ same constant."** Measure to find real performance.
+- **Real Impact:** Assuming array access is slow without measurement, then choosing linked lists, resulting in massive performance loss.
+
+**❌ Misconception 2: "Linked lists are better because insertion is O(1) vs. array's O(n)."**
+- **Why Students Believe This:** Big-O suggests linked lists are superior for insertion.
+- **✅ Correct Understanding:** Array insertion at arbitrary position is O(n), linked list insertion is O(1) IF you have a pointer to the position. But finding that position is O(n) for both (linear search). Total: O(n) for both in practice. Plus, arrays are cache-efficient; linked lists are cache-inefficient. Linked lists are rarely faster than arrays even for insertion-heavy workloads. Modern deques (backed by arrays) outperform linked lists on most workloads.
+- **How to Remember:** **"Insertion cost = finding + shifting (linked list) vs. finding + shifting (array). Same total for random positions."** Cache efficiency favors arrays.
+- **Real Impact:** Choosing linked lists for insertion-heavy workloads and suffering 10-100x performance loss compared to arrays or deques.
+
+**❌ Misconception 3: "Arrays waste space because you need to over-allocate for resizing."**
+- **Why Students Believe This:** Dynamic arrays often over-allocate (e.g., double when full).
+- **✅ Correct Understanding:** Doubling strategy uses O(n) space for n elements (constant multiplicative overhead) and achieves amortized O(1) insertion. Waste is a constant factor (2x max), not a big-O issue. For most applications, this trade-off (small space waste for O(1) amortized insertion) is excellent.
+- **How to Remember:** **"Doubling overhead is a constant factor, worth O(1) amortized insertion."** Trade-off justified.
+- **Real Impact:** Over-engineering space efficiency (allocating exact size) leads to O(n) insertion (copy on every resize), losing the O(1) amortized benefit.
+
+**❌ Misconception 4: "Cache behavior doesn't matter; algorithms that work at scale work."**
+- **Why Students Believe This:** Big-O analysis doesn't explicitly include cache.
+- **✅ Correct Understanding:** Cache behavior often dominates real performance (10-100x variation). Two algorithms with the same Big-O can differ wildly. Cache misses are "hidden" in the Big-O constant, but they're significant. For systems handling large data, cache efficiency is critical. Modern CPUs have sophisticated caches; understanding their behavior is essential for optimization.
+- **How to Remember:** **"Cache misses are huge; Big-O hides them."** Profile to measure real performance.
+- **Real Impact:** Writing cache-inefficient algorithms (strided access, poor locality) and accepting 100x slowdown as "just how algorithms work" instead of optimizing for cache.
+
+**❌ Misconception 5: "Row-major vs. column-major doesn't matter for performance."**
+- **Why Students Believe This:** It's the same data; just different layout.
+- **✅ Correct Understanding:** Layout PROFOUNDLY affects cache behavior. Row-wise traversal on a row-major array is sequential in memory (cache-efficient, ~4ns per access). Column-wise traversal on row-major array is strided (cache-inefficient, ~100ns per access). Same data, 25x performance difference. Layout matters enormously for real performance.
+- **How to Remember:** **"Match iteration order to data layout for cache efficiency."** Mismatch kills performance.
+- **Real Impact:** Writing cache-inefficient matrix operations and accepting 10-100x slowdown instead of transposing or changing layout.
+
+---
+
+### 📈 Advanced Concepts (3-5 per topic)
+
+**Advanced Concept 1: Cache-Oblivious Algorithms**
+- **Description:** Algorithms that achieve optimal cache performance on all memory hierarchy levels without knowing cache parameters (line size, cache depth).
+- **Relates To:** Array performance, cache efficiency, algorithm design.
+- **Why Important:** Portably efficient across different CPUs and cache configurations. Achieves optimal cache behavior automatically.
+- **Applications:** Cache-oblivious matrix transpose, cache-oblivious sorting.
+- **Resources:** Papers by Frigo et al. on cache-oblivious algorithms.
+
+**Advanced Concept 2: SIMD Vectorization**
+- **Description:** Single Instruction, Multiple Data: CPU processes multiple array elements in parallel using vector instructions.
+- **Relates To:** Array efficiency, CPU architecture, performance.
+- **Why Important:** Vectorization exploits array contiguity and cache efficiency, achieving 4-16x speedup (SIMD width) for bulk operations.
+- **Applications:** Numpy arrays, GPU kernels, compilers optimizing loops.
+- **Resources:** Intel/ARM SIMD instruction sets; compiler autovectorization guides.
+
+**Advanced Concept 3: Memory Alignment**
+- **Description:** Optimal performance requires data aligned to cache line boundaries (or SIMD register boundaries).
+- **Relates To:** Array layout, cache efficiency, CPU performance.
+- **Why Important:** Misaligned access can cause cache line splits, reducing performance. Alignment directives optimize access.
+- **Applications:** High-performance computing, graphics, ML.
+- **Resources:** Intel optimization manuals, compiler alignment pragma directives.
+
+**Advanced Concept 4: Bloom Filters and Approximate Arrays**
+- **Description:** Probabilistic data structures using arrays for memory-efficient approximate membership queries.
+- **Relates To:** Arrays, hash functions, space efficiency.
+- **Why Important:** O(1) space for membership testing (vs. hash tables' O(n) space), with small false positive rate.
+- **Applications:** Web caches, spam filters, network routers.
+- **Resources:** "Probabilistic Data Structures and Algorithms" byUnku (online book).
+
+**Advanced Concept 5: Packed Bit Arrays and Bit-Level Optimizations**
+- **Description:** Storing multiple bits per byte to reduce space. Bitvectors for fast set operations.
+- **Relates To:** Array space efficiency, bit manipulation, performance.
+- **Why Important:** Reduces memory footprint and exploits SIMD for fast bulk operations.
+- **Applications:** Compression, set operations, graphics (alpha masks).
+- **Resources:** Bit manipulation tricks; "Hacker's Delight" by Warren.
+
+---
+
+### 🔗 External Resources (3-5 per topic)
+
+**Resource 1: "Introduction to Algorithms" by CLRS, Chapter on Arrays and Sequences**
+- **Type:** Book
+- **Author/Source:** Cormen, Leiserson, Rivest, Stein; MIT
+- **Why It's Useful:** Rigorous analysis of array data structures, operations, and complexity.
+- **Difficulty Level:** Intermediate
+- **Link/Reference:** ISBN 0-262-03384-4.
+
+**Resource 2: "What Every Programmer Should Know About Memory" by Ulrich Drepper**
+- **Type:** Technical Paper / Article
+- **Author/Source:** Ulrich Drepper
+- **Why It's Useful:** Deep dive into cache behavior, memory hierarchies, and optimization. Explains why array layout matters.
+- **Difficulty Level:** Intermediate to Advanced
+- **Link/Reference:** Available free online (pool.rit.edu).
+
+**Resource 3: YouTube Lecture: "Cache, Memory, and Performance" (MIT/UC Berkeley)**
+- **Type:** Video Lecture
+- **Author/Source:** MIT/UC Berkeley CS departments
+- **Why It's Useful:** Visual explanation of cache hierarchies, spatial/temporal locality, array performance.
+- **Difficulty Level:** Intermediate
+- **Link/Reference:** Available on YouTube and course websites.
+
+**Resource 4: "Cache-Oblivious Algorithms" by Frigo, Leiserson, Prokop, Ramachandran**
+- **Type:** Research Paper
+- **Author/Source:** Leading researchers in algorithm design
+- **Why It's Useful:** Advanced techniques for optimal cache performance without knowledge of cache parameters.
+- **Difficulty Level:** Advanced
+- **Link/Reference:** Available on MIT CSAIL website.
+
+**Resource 5: Intel Intrinsics Guide and CPU Optimization Manuals**
+- **Type:** Technical Documentation
+- **Author/Source:** Intel Corporation
+- **Why It's Useful:** Reference for SIMD instructions, alignment directives, and CPU-level optimization.
+- **Difficulty Level:** Advanced
+- **Link/Reference:** https://www.intel.com/content/www/us/en/develop/documentation/cpp-compiler-developer-guide-and-reference/top.html.
+
+**Book References (1-2):**
+- Cormen, T. H., Leiserson, C. E., Rivest, R. L., & Stein, C. (2009). Introduction to algorithms (3rd ed.). MIT Press. ISBN 0-262-03384-4.
+- Warren, H. S. (2012). Hacker's delight (2nd ed.). Addison-Wesley. ISBN 0-321-84268-5.
+
+---
+
+**Total Word Count:** ~6,800 words for Day 1 instructional file
+
+**Status:** ✅ COMPLETE DAY 1 — WEEK 2 — ARRAYS
+Generated using v6.0 framework with all 11 sections + 5 cognitive lenses (pointwise emoji format) + supplementary outcomes (practice problems, interview Q&A, misconceptions, advanced concepts, external resources).
